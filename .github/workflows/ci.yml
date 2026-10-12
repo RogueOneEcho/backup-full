@@ -9,7 +9,7 @@ jobs:
   ci:
     uses: RogueOneEcho/ci/.github/workflows/docker.yml@v1
     with:
-      docker-image: rogueoneecho/backup
+      docker-image: rogueoneecho/backup-full
       build-context: src
       grype-args: ''
       ref: ${{ inputs.ref }}
