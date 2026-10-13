@@ -6,6 +6,7 @@ B2_APPLICATION_KEY="${B2_APPLICATION_KEY:-}"
 B2_APPLICATION_KEY_ID="${B2_APPLICATION_KEY_ID:-}"
 B2_BUCKET="${B2_BUCKET:-}"
 RESTIC_PASSWORD="${RESTIC_PASSWORD:-}"
+RESTIC_PROGRESS_FPS="${RESTIC_PROGRESS_FPS:-0.1}"
 AWS_SECRET_ACCESS_KEY="${B2_APPLICATION_KEY}"
 AWS_ACCESS_KEY_ID="${B2_APPLICATION_KEY_ID}"
 RESTIC_REPO="s3:https://s3.us-west-001.backblazeb2.com/${B2_BUCKET}/restic/${NAME}"
@@ -36,6 +37,7 @@ log-vars () {
   log-debug "B2_APPLICATION_KEY_ID: $(redact "${B2_APPLICATION_KEY_ID}")"
   log-debug "B2_BUCKET: ${B2_BUCKET}"
   log-debug "RESTIC_PASSWORD: $(redact "${RESTIC_PASSWORD}")"
+  log-debug "RESTIC_PROGRESS_FPS: ${RESTIC_PROGRESS_FPS}"
 }
 
 check-vars () {
@@ -84,6 +86,7 @@ check-vars () {
 restic-init () {
   export AWS_SECRET_ACCESS_KEY
   export AWS_ACCESS_KEY_ID
+  export RESTIC_PROGRESS_FPS
   if restic snapshots --repo "${RESTIC_REPO}" >/dev/null 2>&1
   then
     log-debug "Restic repository exists"
