@@ -2,6 +2,8 @@
 set -euo pipefail
 
 NAME="${NAME:-}"
+INCLUDE_PATH="/app/include"
+EXCLUDE_PATH="/app/exclude"
 B2_APPLICATION_KEY="${B2_APPLICATION_KEY:-}"
 B2_APPLICATION_KEY_ID="${B2_APPLICATION_KEY_ID:-}"
 B2_BUCKET="${B2_BUCKET:-}"
@@ -31,8 +33,43 @@ stop-timer () {
   START_TIME=0
 }
 
+read-list () {
+  if [[ ! -f "$1" ]]
+  then
+    return 0
+  fi
+  while IFS= read -r LINE || [[ -n "${LINE}" ]]
+  do
+    if [[ -n "${LINE}" ]]
+    then
+      echo "${LINE}"
+    fi
+  done < "$1"
+}
+
+build-lists () {
+  mapfile -t INCLUDES < <(read-list "${INCLUDE_PATH}")
+  if [[ -e "${EXCLUDE_PATH}" ]]
+  then
+    mapfile -t EXCLUDES < <(read-list "${EXCLUDE_PATH}")
+  else
+    EXCLUDES=("/srv/shared")
+  fi
+  if [[ "${#INCLUDES[@]}" -eq 0 ]]
+  then
+    INCLUDES=("/srv/")
+  fi
+  EXCLUDE_ARGS=()
+  for EXCLUDE in "${EXCLUDES[@]}"
+  do
+    EXCLUDE_ARGS+=(--exclude "${EXCLUDE}")
+  done
+}
+
 log-vars () {
   log-debug "NAME: ${NAME}"
+  log-debug "INCLUDING:\n$(printf '%s\n' "${INCLUDES[@]}")"
+  log-debug "EXCLUDING:\n$(printf '%s\n' "${EXCLUDES[@]}")"
   log-debug "B2_APPLICATION_KEY: $(redact "${B2_APPLICATION_KEY}")"
   log-debug "B2_APPLICATION_KEY_ID: $(redact "${B2_APPLICATION_KEY_ID}")"
   log-debug "B2_BUCKET: ${B2_BUCKET}"
@@ -66,21 +103,35 @@ check-vars () {
     log-warning "RESTIC_PASSWORD must be set"
     return 1
   fi
-  if [[ ! -d /srv/ ]]
-  then
-    log-warning "/srv/ is not a directory"
-    return 1
-  fi
-  FILE_COUNT=$(ls -1A /srv/ | wc -l)
-  if [[ "${FILE_COUNT}" -gt 0 ]]
-  then
-    log-debug "/srv/ contains ${FILE_COUNT} files or directories"
-    return 0
-  else
-    log-warning "/srv/ appears to be empty"
-    log-warning "Ensure the directory has permissions for user: $(id)"
-    return 1
-  fi
+  for EXCLUDE in "${EXCLUDES[@]}"
+  do
+    if [[ "${EXCLUDE}" != /* ]]
+    then
+      log-warning "Exclude ${EXCLUDE} must be an absolute path"
+      return 1
+    fi
+  done
+  for INCLUDE in "${INCLUDES[@]}"
+  do
+    if [[ "${INCLUDE}" != /* ]]
+    then
+      log-warning "Include ${INCLUDE} must be an absolute path"
+      return 1
+    fi
+    if [[ ! -e "${INCLUDE}" ]]
+    then
+      log-warning "${INCLUDE} does not exist"
+      return 1
+    fi
+    FILE_COUNT=$(ls -1A "${INCLUDE}" | wc -l)
+    if [[ "${FILE_COUNT}" -eq 0 ]]
+    then
+      log-warning "${INCLUDE} appears to be empty"
+      log-warning "Ensure the directory has permissions for user: $(id)"
+      return 1
+    fi
+    log-debug "${INCLUDE} contains ${FILE_COUNT} files or directories"
+  done
 }
 
 restic-init () {
@@ -109,7 +160,7 @@ restic-init () {
 restic-backup () {
   log-information "Running restic backup"
   start-timer
-  if restic backup --repo "${RESTIC_REPO}" --host "${NAME}" --exclude /srv/shared /srv/
+  if restic backup --repo "${RESTIC_REPO}" --host "${NAME}" "${EXCLUDE_ARGS[@]}" "${INCLUDES[@]}"
   then
     stop-timer
     log-success "Backup complete (${TIMER}s)"
@@ -158,6 +209,7 @@ restic-check () {
   fi
 }
 
+build-lists
 log-vars
 check-vars
 restic-init

@@ -6,7 +6,7 @@
   <a href="LICENSE.md"><img alt="License" src="https://img.shields.io/github/license/RogueOneEcho/backup-full"></a>
 </p>
 
-Snapshot all of `/srv` to Backblaze B2 using restic.
+Snapshot chosen paths to Backblaze B2 using restic; all of `/srv` except `/srv/shared` by default.
 
 ```bash
 docker pull ghcr.io/rogueoneecho/backup-full
@@ -14,7 +14,10 @@ docker pull ghcr.io/rogueoneecho/backup-full
 
 ## Features
 
-- Snapshots the whole of `/srv`, excluding `/srv/shared`
+- Optional `/app/include`: one absolute path per line; IF not mounted or empty, defaults to `/srv/`; each path MUST exist and NOT be empty
+- Optional `/app/exclude`: one absolute pattern per line; IF not mounted, defaults to `/srv/shared`
+- Relative lines are rejected, since restic matches relative patterns at any depth
+- Empty lists, or a directory from an empty compose config, are treated as empty
 - Uploads to Backblaze B2 via restic with encryption and deduplication
 - Automatic retention policy: everything within 14 days, 4 weekly, 12 monthly
 - Verifies backup integrity after each run

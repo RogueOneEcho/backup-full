@@ -10,3 +10,28 @@ services:
     - .env
     volumes:
     - /srv:/srv:ro
+
+  backup-shared:
+    container_name: backup-shared
+    image: ghcr.io/rogueoneecho/backup-full
+    userns_mode: host
+    environment:
+      NAME: example-shared
+    env_file:
+    - .env
+    configs:
+    - source: shared_include
+      target: /app/include
+    - source: shared_exclude
+      target: /app/exclude
+    volumes:
+    - /srv/shared:/srv/shared:ro
+    - /srv/restic-cache/example-shared:/root/.cache/restic
+
+configs:
+  shared_include:
+    content: |
+      /srv/shared/example-1
+      /srv/shared/example-2
+  shared_exclude:
+    content: ""
