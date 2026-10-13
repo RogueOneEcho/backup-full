@@ -8,6 +8,11 @@ services:
       NAME: example
     env_file:
     - .env
+    configs:
+    - source: full_include
+      target: /app/include
+    - source: full_exclude
+      target: /app/exclude
     volumes:
     - /srv:/srv:ro
 
@@ -22,16 +27,18 @@ services:
     configs:
     - source: shared_include
       target: /app/include
-    - source: shared_exclude
-      target: /app/exclude
     volumes:
     - /srv/shared:/srv/shared:ro
     - /srv/restic-cache/example-shared:/root/.cache/restic
 
 configs:
+  full_include:
+    content: |
+      /srv/
+  full_exclude:
+    content: |
+      /srv/shared
   shared_include:
     content: |
       /srv/shared/example-1
       /srv/shared/example-2
-  shared_exclude:
-    content: ""

@@ -49,16 +49,7 @@ read-list () {
 
 build-lists () {
   mapfile -t INCLUDES < <(read-list "${INCLUDE_PATH}")
-  if [[ -e "${EXCLUDE_PATH}" ]]
-  then
-    mapfile -t EXCLUDES < <(read-list "${EXCLUDE_PATH}")
-  else
-    EXCLUDES=("/srv/shared")
-  fi
-  if [[ "${#INCLUDES[@]}" -eq 0 ]]
-  then
-    INCLUDES=("/srv/")
-  fi
+  mapfile -t EXCLUDES < <(read-list "${EXCLUDE_PATH}")
   EXCLUDE_ARGS=()
   for EXCLUDE in "${EXCLUDES[@]}"
   do
@@ -101,6 +92,11 @@ check-vars () {
   if [[ -z "${RESTIC_PASSWORD}" ]]
   then
     log-warning "RESTIC_PASSWORD must be set"
+    return 1
+  fi
+  if [[ "${#INCLUDES[@]}" -eq 0 ]]
+  then
+    log-warning "${INCLUDE_PATH} must list at least one path"
     return 1
   fi
   for EXCLUDE in "${EXCLUDES[@]}"
