@@ -1,6 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+source ./logging
+source ./file-env
+
+file-env B2_APPLICATION_KEY
+file-env B2_APPLICATION_KEY_ID
+file-env RESTIC_PASSWORD
+
 NAME="${NAME:-}"
 INCLUDE_PATH="/app/include"
 EXCLUDE_PATH="/app/exclude"
@@ -12,8 +19,6 @@ RESTIC_PROGRESS_FPS="${RESTIC_PROGRESS_FPS:-0.1}"
 AWS_SECRET_ACCESS_KEY="${B2_APPLICATION_KEY}"
 AWS_ACCESS_KEY_ID="${B2_APPLICATION_KEY_ID}"
 RESTIC_REPO="s3:https://s3.us-west-001.backblazeb2.com/${B2_BUCKET}/restic/${NAME}"
-
-source ./logging
 
 redact () {
   if [[ -n "$1" ]]
@@ -133,6 +138,7 @@ check-vars () {
 restic-init () {
   export AWS_SECRET_ACCESS_KEY
   export AWS_ACCESS_KEY_ID
+  export RESTIC_PASSWORD
   export RESTIC_PROGRESS_FPS
   if restic snapshots --repo "${RESTIC_REPO}" >/dev/null 2>&1
   then

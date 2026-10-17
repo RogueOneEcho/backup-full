@@ -34,6 +34,26 @@ docker pull ghcr.io/rogueoneecho/backup-full
 
 See [docker-compose.yml](docker-compose.yml) for an example.
 
+### Secrets
+
+`B2_APPLICATION_KEY`, `B2_APPLICATION_KEY_ID` and `RESTIC_PASSWORD` can each be read from a file by setting `<VAR>_FILE` to its path, e.g. a compose secret:
+
+```yaml
+services:
+  backup-full:
+    environment:
+      RESTIC_PASSWORD_FILE: /run/secrets/restic_password
+    secrets:
+    - restic_password
+
+secrets:
+  restic_password:
+    environment: RESTIC_PASSWORD
+```
+
+- Setting both `<VAR>` and `<VAR>_FILE` is an error
+- Trailing newlines in the file are ignored
+
 ## Releases and Changes
 
 Releases and a full changelog are available via [GitHub Releases](https://github.com/RogueOneEcho/backup-full/releases).
